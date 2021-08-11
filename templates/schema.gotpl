@@ -1,5 +1,9 @@
 package main
 
+import (
+    "encoding/json"
+)
+
 {{range .Types}}
   {{if eq .Kind "OBJECT"}}
     type {{.Name}} struct {

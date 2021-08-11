@@ -1,47 +1,41 @@
-package main
-
-import (
-    "encoding/json"
-)
-
 {{with $doc := .}}
-{{range .Fragments}}
-type {{formatFragmentName .Name}} struct {
-{{formatSelectionSet .SelectionSet 0}}{{"}"}}
-{{end}}
-
-{{range .Operations}}
-type {{.Name}}Result struct {
-{{formatSelectionSet .SelectionSet 0}}{{"}"}}
-
-func (client *AdminClient) {{.Name}}(
-  {{range .VariableDefinitions}}
-    {{.Variable}} {{goType .Type}},
+  {{range .Fragments}}
+    type {{formatFragmentName .Name}} struct {
+      {{formatSelectionSet .SelectionSet 0}}
+    }
   {{end}}
-) (*{{.Name}}Result, error) {
-    query := {{"`"}}
-      {{rawQuery . $doc.Fragments}}
-    {{"`"}}
 
-    response, err := client.Request(
-        query,
-        map[string]interface{}{
-          {{range .VariableDefinitions}}
-            "{{.Variable}}": {{.Variable}},
-          {{end}}
-        },
-    )
-    if err != nil {
-      return nil, err
+  {{range .Operations}}
+    type {{.Name}}Result struct {
+      {{formatSelectionSet .SelectionSet 0}}
     }
 
-    var result {{.Name}}Result
+    func (client *AdminClient) {{.Name}}(
+      {{range .VariableDefinitions}}
+        {{.Variable}} {{formatType .Type}},
+      {{end}}
+    ) (*{{.Name}}Result, error) {
+        query := `{{formatQuery . $doc.Fragments}}`
 
-    if err = json.Unmarshal(response.Data, &result); err != nil {
-      return nil, err
+        response, err := client.Request(
+            query,
+            map[string]interface{}{
+              {{range .VariableDefinitions}}
+                "{{.Variable}}": {{.Variable}},
+              {{end}}
+            },
+        )
+        if err != nil {
+          return nil, err
+        }
+
+        var result {{.Name}}Result
+
+        if err = json.Unmarshal(response.Data, &result); err != nil {
+          return nil, err
+        }
+
+        return &result, nil
     }
-
-    return &result, nil
-}
-{{end}}
+  {{end}}
 {{end}}
