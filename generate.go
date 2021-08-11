@@ -10,11 +10,11 @@ import (
 )
 
 var typeMap = map[string]string{
-		"ID":						"uint64",
+		"ID":						"string",
+		"Int":					"int64",
 		"Float":				"float64",
 		"Boolean":			"bool",
 		"String":				"string",
-		"Int":					"uint64",
 		"_text":				"[]string",
 		"timestamptz":	"string",
 }
