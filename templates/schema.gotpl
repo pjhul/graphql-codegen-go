@@ -2,23 +2,23 @@ package main
 
 {{range .Types}}
   {{if eq .Kind "OBJECT"}}
-    type {{.Name}} {{"struct {"}}{{range .Fields}}
-        {{goName .Name}} {{goType .Type}} {{"\x60json:\""}}{{.Name}}{{"\"\x60"}}{{end}}
+    type {{.Name}} struct {
+        {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}}"`{{"\n"}}{{end}}
     }
   {{else if eq .Kind "INPUT_OBJECT"}}
-    type {{.Name}} {{"struct {"}}{{range .Fields}}
-        {{goName .Name}} {{goType .Type}} {{"\x60json:\""}}{{.Name}}{{",omitempty\"\x60"}}{{end}}
+    type {{.Name}} struct {
+        {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}},omitempty"`{{"\n"}}{{end}}
     }
   {{else if eq .Kind "ENUM"}}{{with $x := .}}
     type {{$x.Name}} string
     const (
       {{range $x.EnumValues}}
-          {{$x.Name}}_{{goName .Name}} {{$x.Name}} = "{{.Name}}"
+          {{$x.Name}}_{{formatName .Name}} {{$x.Name}} = "{{.Name}}"
       {{end}}
     )
   {{end}}
   {{else if eq .Kind "SCALAR"}}
-    type {{.Name}} {{goScalar .Name}}
+    type {{.Name}} {{formatScalar .Name}}
   {{end}}
 {{end}}
 
