@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"modosuite/graphql-codegen-go/gofmt"
 
@@ -15,34 +16,40 @@ import (
 
 var (
 		schemaPath = flag.String("schema", "", "Path to locate the graphql schema")
-		operationPath = flag.String("ops", "", "Path to locate the graphql operations")
+		operationsGlob = flag.String("operations", "", "Glob to locate the graphql operations")
 )
 
 func main() {
 		flag.Parse()
 
-		schemaFile, err := ioutil.ReadFile(*schemaPath)
-		if err != nil { panic(err) }
+		var buf bytes.Buffer
 
-		opFile, err := ioutil.ReadFile(*operationPath)
+		fmt.Printf("Reading schema from %s\n", *schemaPath)
+		content, err := ioutil.ReadFile(*schemaPath)
 		if err != nil { panic(err) }
 
 		source := &ast.Source{
 				Name: *schemaPath,
-				Input: string(schemaFile),
+				Input: string(content),
 				BuiltIn: false,
 		}
 
 		schemaDoc, gqlErr := gqlparser.LoadSchema(source)
 		if gqlErr != nil { panic(gqlErr) }
 
-		var buf bytes.Buffer
-
 		err = generateSchema(schemaDoc, &buf)
 		if err != nil { panic(err) }
 
-		err = generateOperations(schemaDoc, string(opFile), &buf)
+		operationFiles, err := filepath.Glob(*operationsGlob)
 		if err != nil { panic(err) }
+
+		for _, file := range operationFiles {
+				opFile, err := ioutil.ReadFile(file)
+				if err != nil { panic(err) }
+
+				err = generateOperations(schemaDoc, string(opFile), &buf)
+				if err != nil { panic(err) }
+		}
 
 		file, err := os.Create("schema.go")
 		if err != nil { panic(err) }
