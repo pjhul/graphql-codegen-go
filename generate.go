@@ -7,6 +7,8 @@ import (
 
 	"github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
+
+	_ "embed"
 )
 
 var typeMap = map[string]string{
@@ -19,12 +21,19 @@ var typeMap = map[string]string{
 		"timestamptz":	"string",
 }
 
+//go:embed templates/schema.gotpl
+var schemaTmpl string
+
+//go:embed templates/operations.gotpl
+var operationsTmpl string
+
 func generateSchema(schema *ast.Schema, out io.Writer) error {
+
 		tmpl, err := template.New("schema.gotpl").Funcs(template.FuncMap{
 				"formatName": formatName,
 				"formatScalar": formatScalar,
 				"formatType": formatType,
-		}).ParseFiles("./templates/schema.gotpl")
+		}).Parse(schemaTmpl)
 
 		err = tmpl.Execute(out, schema)
 		if err != nil {
@@ -47,7 +56,7 @@ func generateOperations(schema *ast.Schema, document string, out io.Writer) erro
 				"formatFragmentName": formatFragmentName,
 				"formatSelectionSet": formatSelectionSet,
 				"formatQuery": formatQuery,
-		}).ParseFiles("./templates/operations.gotpl")
+		}).Parse(operationsTmpl)
 
 		err = tmpl.Execute(out, queryDoc)
 		if err != nil {
