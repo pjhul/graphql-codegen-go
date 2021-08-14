@@ -28,7 +28,6 @@ var schemaTmpl string
 var operationsTmpl string
 
 func generateSchema(schema *ast.Schema, out io.Writer) error {
-
 		tmpl, err := template.New("schema.gotpl").Funcs(template.FuncMap{
 				"formatName": formatName,
 				"formatScalar": formatScalar,
@@ -92,9 +91,21 @@ func formatType(t *ast.Type) string {
 		}
 
 		if t.Elem != nil {
-				sb.WriteString("[]" + t.Elem.NamedType)
+				newType, ok := typeMap[t.Elem.NamedType]
+
+				if ok {
+						sb.WriteString("[]" + newType)
+				} else {
+						sb.WriteString("[]" + t.Elem.NamedType)
+				}
 		} else {
-				sb.WriteString(t.NamedType)
+				newType, ok := typeMap[t.NamedType]
+
+				if ok {
+						sb.WriteString(newType)
+				} else {
+						sb.WriteString(t.NamedType)
+				}
 		}
 
 		return sb.String()
@@ -111,13 +122,26 @@ func formatSelectionSet(selectionSet ast.SelectionSet, depth int) string {
 						for i := 0; i <= depth; i++ {
 								sb.WriteString("    ")
 						}
+
+						// FIXME: Does not take aliases into account
+
 						if len(selection.SelectionSet) == 0 {
 								sb.WriteString(
 										strings.Title(selection.Name) + " " + formatType(selection.Definition.Type) + " `json:\"" + selection.Name + "\"`\n",
 								)
 						} else {
+								sb.WriteString(strings.Title(selection.Name) + " ")
+
+								if !selection.Definition.Type.NonNull {
+										sb.WriteString("*")
+								}
+
+								if selection.Definition.Type.Elem != nil {
+										sb.WriteString("[]")
+								}
+
 								sb.WriteString(
-										strings.Title(selection.Name) + " struct {\n" + formatSelectionSet(selection.SelectionSet, depth + 1),
+										"struct {\n" + formatSelectionSet(selection.SelectionSet, depth + 1),
 								)
 
 								for i := 0; i <= depth; i++ {
