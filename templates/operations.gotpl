@@ -10,17 +10,13 @@
       {{formatSelectionSet .SelectionSet 0}}
     }
 
-    func (client *AdminClient) {{.Name}}({{range .VariableDefinitions}}
-      {{.Variable}} {{formatType .Type}},{{end}}
-    ) (*{{.Name}}Result, error) {
+    func (client *AdminClient) {{.Name}}({{range .VariableDefinitions}}{{.Variable}} {{formatType .Type}},{{end}}) (*{{.Name}}Result, error) {
         query := `{{formatQuery . $doc.Fragments}}`
 
         response, err := client.Request(
             query,
             map[string]interface{}{
-              {{range .VariableDefinitions}}
-                "{{.Variable}}": {{.Variable}},
-              {{end}}
+              {{range .VariableDefinitions}}"{{.Variable}}": {{.Variable}}{{",\n"}}{{end}}
             },
         )
         if err != nil {
