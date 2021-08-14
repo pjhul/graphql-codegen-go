@@ -15,6 +15,7 @@ import (
 )
 
 var (
+		packageName = flag.String("package", "main", "Name of the package to output")
 		schemaPath = flag.String("schema", "", "Path to locate the graphql schema")
 		operationsGlob = flag.String("operations", "", "Glob to locate the graphql operations")
 )
@@ -23,6 +24,8 @@ func main() {
 		flag.Parse()
 
 		var buf bytes.Buffer
+
+		buf.WriteString(fmt.Sprintf("package %s\n", *packageName))
 
 		fmt.Printf("Reading schema from %s\n", *schemaPath)
 		content, err := ioutil.ReadFile(*schemaPath)
