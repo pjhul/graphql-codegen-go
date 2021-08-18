@@ -25,8 +25,28 @@ var typeMap = map[string]string{
 //go:embed templates/schema.gotpl
 var schemaTmpl string
 
+//go:embed templates/inputs.gotpl
+var inputsTmpl string
+
 //go:embed templates/operations.gotpl
 var operationsTmpl string
+
+func generateInputs(schema *ast.Schema, out io.Writer) error {
+		fmt.Println("Generating input types...")
+
+		tmpl, err := template.New("inputs.gotpl").Funcs(template.FuncMap{
+				"formatName": formatName,
+				"formatScalar": formatScalar,
+				"formatType": formatType,
+		}).Parse(inputsTmpl)
+
+		err = tmpl.Execute(out, schema)
+		if err != nil {
+				return err
+		}
+
+		return nil
+}
 
 func generateSchema(schema *ast.Schema, out io.Writer) error {
 		fmt.Println("Generating schema types...")
@@ -113,7 +133,7 @@ func formatType(t *ast.Type) string {
 				}
 		}
 
-		return t.String()
+		return sb.String()
 }
 
 func formatSelectionSet(selectionSet ast.SelectionSet, depth int) string {

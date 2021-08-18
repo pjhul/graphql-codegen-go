@@ -27,6 +27,7 @@ var (
 		schemaPath = flag.String("schema", "", "Path to locate the graphql schema")
 		operationsGlob = flag.String("operations", "", "Glob to locate the graphql operations")
 		endpoint	= flag.String("E", "", "Endpoint of the api")
+		fullSchema = flag.Bool("full", false, "Include full schema types")
 )
 
 var headerList headers
@@ -37,7 +38,13 @@ func main() {
 
 		var buf bytes.Buffer
 
-		buf.WriteString(fmt.Sprintf("package %s\n", *packageName))
+		buf.WriteString(fmt.Sprintf(`
+				package %s
+
+				import (
+						"encoding/json"
+				)
+		`, *packageName))
 
 		headerMap := make(map[string][]string)
 		for _, h := range headerList {
@@ -50,8 +57,13 @@ func main() {
 				fmt.Println(err)
 		}
 
-		err = generateSchema(schema, &buf)
+		err = generateInputs(schema, &buf)
 		if err != nil { panic(err) }
+
+		if *fullSchema {
+				err = generateSchema(schema, &buf)
+				if err != nil { panic(err) }
+		}
 
 		operationFiles, err := filepath.Glob(*operationsGlob)
 		if err != nil { panic(err) }

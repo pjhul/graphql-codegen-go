@@ -1,7 +1,3 @@
-import (
-    "encoding/json"
-)
-
 {{range .Types}}
   {{if eq .Kind "OBJECT"}}
     type {{.Name}} struct {
@@ -11,18 +7,8 @@ import (
     type {{.Name}} struct {
         {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}}"`{{"\n"}}{{end}}
     }
-  {{else if eq .Kind "INPUT_OBJECT"}}
-    type {{.Name}} struct {
-        {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}},omitempty"`{{"\n"}}{{end}}
-    }
-  {{else if eq .Kind "ENUM"}}{{with $x := .}}
-    type {{$x.Name}} string
-    const (
-      {{range $x.EnumValues}}{{$x.Name}}_{{formatName .Name}} {{$x.Name}} = "{{.Name}}"{{"\n"}}{{end}}
-    )
-  {{end}}
-  {{else if eq .Kind "SCALAR"}}
-    type {{.Name}} {{formatScalar .Name}}
+  {{else if eq .Kind "UNION"}}
+    type {{.Name}} interface{}
   {{end}}
 {{end}}
 
