@@ -26,7 +26,7 @@ var (
 		packageName = flag.String("package", "main", "Name of the package to output")
 		schemaPath = flag.String("schema", "", "Path to locate the graphql schema")
 		operationsGlob = flag.String("operations", "", "Glob to locate the graphql operations")
-		// endpoint	= flag.String("e", "", "Endpoint of the api")
+		endpoint	= flag.String("E", "", "Endpoint of the api")
 )
 
 var headerList headers
@@ -47,7 +47,7 @@ func main() {
 				headerMap[strings.TrimSpace(slices[0])] = []string{strings.TrimSpace(slices[1])}
 		}
 
-		schema, err := Introspect("https://api.dev.modosuite.com/v1/graphql", headerMap)
+		schema, err := Introspect(*endpoint, headerMap)
 		if err != nil {
 				fmt.Println(err)
 		}
