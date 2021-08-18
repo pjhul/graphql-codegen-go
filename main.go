@@ -37,8 +37,6 @@ func main() {
 
 		var buf bytes.Buffer
 
-		fmt.Println(headerList)
-
 		buf.WriteString(fmt.Sprintf("package %s\n", *packageName))
 
 		headerMap := make(map[string][]string)
@@ -73,6 +71,8 @@ func main() {
 		err = gofmt.ProcessFile("schema.go", &buf, file, false)
 		if err != nil { panic(err) }
 
+		fmt.Println("Successfully generated schema file!")
+
 		/*fmt.Printf("Reading schema from %s\n", *schemaPath)
 		content, err := ioutil.ReadFile(*schemaPath)
 		if err != nil { panic(err) }
@@ -96,5 +96,5 @@ func main() {
 		err = gofmt.ProcessFile("./schema.go", &buf, file, false)
 		if err != nil { panic(err) }
 
-		fmt.Println("Successfully generated schema file!")*/
+		*/
 }
