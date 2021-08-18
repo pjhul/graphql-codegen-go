@@ -8,23 +8,46 @@ import (
 	"modosuite/graphql-codegen-go/gofmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+type headers []string
+
+func (i *headers) String() string {
+    return "my string representation"
+}
+
+func (i *headers) Set(value string) error {
+    *i = append(*i, value)
+    return nil
+}
 
 var (
 		packageName = flag.String("package", "main", "Name of the package to output")
 		schemaPath = flag.String("schema", "", "Path to locate the graphql schema")
 		operationsGlob = flag.String("operations", "", "Glob to locate the graphql operations")
-		url	= flag.String("url", "", "Endpoint of the api")
+		// endpoint	= flag.String("e", "", "Endpoint of the api")
 )
 
+var headerList headers
+
 func main() {
+		flag.Var(&headerList, "H", "")
 		flag.Parse()
 
 		var buf bytes.Buffer
 
+		fmt.Println(headerList)
+
 		buf.WriteString(fmt.Sprintf("package %s\n", *packageName))
 
-		schema, err := Introspect("https://api.dev.modosuite.com/v1/graphql")
+		headerMap := make(map[string][]string)
+		for _, h := range headerList {
+				slices := strings.Split(h, ":")
+				headerMap[strings.TrimSpace(slices[0])] = []string{strings.TrimSpace(slices[1])}
+		}
+
+		schema, err := Introspect("https://api.dev.modosuite.com/v1/graphql", headerMap)
 		if err != nil {
 				fmt.Println(err)
 		}

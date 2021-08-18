@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"io/ioutil"
 	"net/http"
@@ -47,6 +49,9 @@ type IntrospectionQueryResult struct {
 						Types []FullType `json:"types"`
 				} `json:"__schema"`
 		} `json:"data"`
+		Errors []struct{
+				Message string `json:"message"`
+		} `json:"errors"`
 }
 
 type FullType struct {
@@ -61,9 +66,10 @@ type FullType struct {
 }
 
 type Field struct {
-		Name				string			`json:"name"`
-		Description string			`json:"description"`
-		Type				*TypeRef		`json:"type"`
+		Name				string					`json:"name"`
+		Description string					`json:"description"`
+		Args				[]*InputValue		`json:"args"`
+		Type				*TypeRef				`json:"type"`
 }
 
 type EnumValue struct {
@@ -118,7 +124,7 @@ func parseType(typeRef *TypeRef) *ast.Type {
 		return nil
 }
 
-func Introspect(endpoint string) (*ast.Schema, error) {
+func Introspect(endpoint string, headers map[string][]string) (*ast.Schema, error) {
 		query := `
 				query IntrospectionQuery {
 						__schema {
@@ -138,6 +144,9 @@ func Introspect(endpoint string) (*ast.Schema, error) {
 						fields(includeDeprecated: true) {
 								name
 								description
+								args {
+										...InputValue
+								}
 								type {
 										...TypeRef
 								}
@@ -212,8 +221,10 @@ func Introspect(endpoint string) (*ast.Schema, error) {
 				return nil, err
 		}
 
+		if headers != nil {
+				request.Header = http.Header(headers)
+		}
 		request.Header.Set("Content-Type", "application/json")
-		request.Header.Set("X-Hasura-Admin-Secret", "Bt9oEbGLX1UbyCkS43cIrrA5GtDzgkaPVJ9D0Nq4")
 
 		client := &http.Client{}
 		response, err := client.Do(request)
@@ -228,6 +239,8 @@ func Introspect(endpoint string) (*ast.Schema, error) {
 		err = json.Unmarshal(body, &result)
 		if err != nil {
 				return nil, err
+		} else if len(result.Errors) > 0 {
+				return nil, errors.New(fmt.Sprintf("%v", result.Errors))
 		}
 
 		resultSchema := result.Data.Schema
@@ -273,39 +286,46 @@ func Introspect(endpoint string) (*ast.Schema, error) {
 				switch(DefinitionKind(fullType.Kind)) {
 						case DEF_OBJECT, DEF_INTERFACE:
 								for _, field := range fullType.Fields {
-										fieldDefinition := &ast.FieldDefinition{
-												Name: field.Name,
-												Description: field.Description,
+										arguments := []*ast.ArgumentDefinition{}
+
+										for _, arg := range field.Args {
+												arguments = append(arguments, &ast.ArgumentDefinition{
+														Name: arg.Name,
+														Description: arg.Description,
+														DefaultValue: &ast.Value{
+																Raw: arg.DefaultValue,
+														},
+														Type: parseType(arg.Type),
+												})
+
 										}
 
-										fieldDefinition.Type = parseType(field.Type)
-										fields = append(fields, fieldDefinition)
+										fields = append(fields, &ast.FieldDefinition{
+												Name: field.Name,
+												Description: field.Description,
+												Arguments: arguments,
+												Type: parseType(field.Type),
+										})
 								}
 								break
 						case DEF_INPUT_OBJECT:
 								for _, input := range fullType.InputFields {
-										defaultValue := &ast.Value{
-												Raw: input.DefaultValue,
-										}
-
-										fieldDefinition := &ast.FieldDefinition{
+										fields = append(fields, &ast.FieldDefinition{
 												Name: input.Name,
 												Description: input.Description,
-												DefaultValue: defaultValue,
-										}
-
-										fieldDefinition.Type = parseType(input.Type)
-										fields = append(fields, fieldDefinition)
+												DefaultValue: &ast.Value{
+														Raw: input.DefaultValue,
+												},
+												Type: parseType(input.Type),
+										})
 								}
 								break
 						case DEF_ENUM:
 								for _, value := range fullType.EnumValues {
-										enumValueDefinition := &ast.EnumValueDefinition{
+										enumValues = append(enumValues, &ast.EnumValueDefinition{
 												Name: value.Name,
 												Description: value.Description,
-										}
-
-										enumValues = append(enumValues, enumValueDefinition)
+										})
 								}
 								break
 				}
