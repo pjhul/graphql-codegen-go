@@ -113,7 +113,7 @@ func formatType(t *ast.Type) string {
 				}
 		}
 
-		return "string"
+		return t.String()
 }
 
 func formatSelectionSet(selectionSet ast.SelectionSet, depth int) string {
