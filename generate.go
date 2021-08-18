@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"text/template"
@@ -28,6 +29,8 @@ var schemaTmpl string
 var operationsTmpl string
 
 func generateSchema(schema *ast.Schema, out io.Writer) error {
+		fmt.Println("Generating schema types...")
+
 		tmpl, err := template.New("schema.gotpl").Funcs(template.FuncMap{
 				"formatName": formatName,
 				"formatScalar": formatScalar,
@@ -43,6 +46,8 @@ func generateSchema(schema *ast.Schema, out io.Writer) error {
 }
 
 func generateOperations(schema *ast.Schema, document string, out io.Writer) error {
+		fmt.Println("Generating operations...")
+
 		queryDoc, gqlErr := gqlparser.LoadQuery(schema, document)
 		if gqlErr != nil {
 				return gqlErr
@@ -79,7 +84,7 @@ func formatScalar(scalar string) string {
 		if ok {
 				return newType
 		} else {
-				return scalar
+				return "string"
 		}
 }
 
@@ -108,7 +113,7 @@ func formatType(t *ast.Type) string {
 				}
 		}
 
-		return sb.String()
+		return "string"
 }
 
 func formatSelectionSet(selectionSet ast.SelectionSet, depth int) string {

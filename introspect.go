@@ -112,7 +112,7 @@ func parseType(typeRef *TypeRef) *ast.Type {
 								Elem: ofType,
 						}
 				case TYPE_SCALAR:
-						return ast.NonNullNamedType(typeRef.Name, nil)
+						return ast.NamedType(typeRef.Name, nil)
 		}
 
 		return nil
@@ -195,6 +195,8 @@ func parseFullType(fullType *FullType) *ast.Definition {
 }
 
 func Introspect(endpoint string, headers map[string][]string) (*ast.Schema, error) {
+		fmt.Printf("Pulling remote schema from %s...\n", endpoint)
+
 		query := `
 				query IntrospectionQuery {
 						__schema {
@@ -343,9 +345,6 @@ func Introspect(endpoint string, headers map[string][]string) (*ast.Schema, erro
 						schema.AddPossibleType(fullType.Name, def)
 				}
 		}
-
-
-		fmt.Println(schema.Query.Fields.ForName("lineItemById").Type)
 
 		return schema, nil
 }

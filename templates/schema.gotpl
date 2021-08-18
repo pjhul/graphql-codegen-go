@@ -8,7 +8,7 @@ import (
         {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}}"`{{"\n"}}{{end}}
     }
   {{else if eq .Kind "INTERFACE"}}
-    type {{.Name}} interface {
+    type {{.Name}} struct {
         {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}}"`{{"\n"}}{{end}}
     }
   {{else if eq .Kind "INPUT_OBJECT"}}
