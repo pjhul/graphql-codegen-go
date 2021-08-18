@@ -18,9 +18,7 @@ import (
   {{else if eq .Kind "ENUM"}}{{with $x := .}}
     type {{$x.Name}} string
     const (
-      {{range $x.EnumValues}}
-          {{$x.Name}}_{{formatName .Name}} {{$x.Name}} = "{{.Name}}"
-      {{end}}
+      {{range $x.EnumValues}}{{$x.Name}}_{{formatName .Name}} {{$x.Name}} = "{{.Name}}"{{"\n"}}{{end}}
     )
   {{end}}
   {{else if eq .Kind "SCALAR"}}

@@ -50,16 +50,32 @@ type IntrospectionQueryResult struct {
 }
 
 type FullType struct {
-		Kind DefinitionKind `json:"kind"`
-		Name string `json:"name"`
-		Description string `json:"description"`
-		Fields []Field `json:"fields"`
+		Kind						DefinitionKind	`json:"kind"`
+		Name						string					`json:"name"`
+		Description			string					`json:"description"`
+		Fields					[]Field					`json:"fields"`
+		InputFields			[]InputValue		`json:"inputFields"`
+		Interfaces			[]*TypeRef			`json:"interfaces"`
+		EnumValues			[]EnumValue			`json:"enumValues"`
+		PossibleTypes		[]*TypeRef			`json:"possibleTypes"`
 }
 
 type Field struct {
-		Name string					`json:"name"`
-		Description string	`json:"description"`
-		Type *TypeRef				`json:"type"`
+		Name				string			`json:"name"`
+		Description string			`json:"description"`
+		Type				*TypeRef		`json:"type"`
+}
+
+type EnumValue struct {
+		Name				string `json:"name"`
+		Description string `json:"description"`
+}
+
+type InputValue struct {
+		Name						string			`json:"name"`
+		Description			string			`json:"description"`
+		Type						*TypeRef		`json:"type"`
+		DefaultValue		string			`json:"defaultValue"`
 }
 
 type TypeRef struct {
@@ -126,6 +142,28 @@ func Introspect(endpoint string) (*ast.Schema, error) {
 										...TypeRef
 								}
 						}
+						inputFields {
+								...InputValue
+						}
+						interfaces {
+								...TypeRef
+						}
+						enumValues(includeDeprecated: true) {
+								name
+								description
+						}
+						possibleTypes {
+								...TypeRef
+						}
+				}
+
+				fragment InputValue on __InputValue {
+						name
+						description
+						type {
+								...TypeRef
+						}
+						defaultValue
 				}
 
 				fragment TypeRef on __Type {
@@ -186,8 +224,6 @@ func Introspect(endpoint string) (*ast.Schema, error) {
 
 		body, _ = ioutil.ReadAll(response.Body)
 
-		// fmt.Println(string(body))
-
 		var result IntrospectionQueryResult
 		err = json.Unmarshal(body, &result)
 		if err != nil {
@@ -196,8 +232,6 @@ func Introspect(endpoint string) (*ast.Schema, error) {
 
 		resultSchema := result.Data.Schema
 		schema := &ast.Schema{}
-
-		// fmt.Println(resultSchema.Types)
 
 		if resultSchema.QueryType.Name != nil {
 				schema.Query = &ast.Definition{
@@ -220,6 +254,21 @@ func Introspect(endpoint string) (*ast.Schema, error) {
 		schema.Types = make(map[string]*ast.Definition)
 		for _, fullType := range resultSchema.Types {
 				fields := []*ast.FieldDefinition{}
+				enumValues := []*ast.EnumValueDefinition{}
+
+				interfaces := []string{}
+				for _, interf := range fullType.Interfaces {
+						if interf != nil {
+								interfaces = append(interfaces, interf.Name)
+						}
+				}
+
+				possibleTypes := []string{}
+				for _, possibleType := range fullType.PossibleTypes {
+						if possibleType != nil {
+								possibleTypes = append(possibleTypes, possibleType.Name)
+						}
+				}
 
 				switch(DefinitionKind(fullType.Kind)) {
 						case DEF_OBJECT, DEF_INTERFACE:
@@ -233,18 +282,44 @@ func Introspect(endpoint string) (*ast.Schema, error) {
 										fields = append(fields, fieldDefinition)
 								}
 								break
+						case DEF_INPUT_OBJECT:
+								for _, input := range fullType.InputFields {
+										defaultValue := &ast.Value{
+												Raw: input.DefaultValue,
+										}
+
+										fieldDefinition := &ast.FieldDefinition{
+												Name: input.Name,
+												Description: input.Description,
+												DefaultValue: defaultValue,
+										}
+
+										fieldDefinition.Type = parseType(input.Type)
+										fields = append(fields, fieldDefinition)
+								}
+								break
+						case DEF_ENUM:
+								for _, value := range fullType.EnumValues {
+										enumValueDefinition := &ast.EnumValueDefinition{
+												Name: value.Name,
+												Description: value.Description,
+										}
+
+										enumValues = append(enumValues, enumValueDefinition)
+								}
+								break
 				}
 
 				schema.Types[fullType.Name] = &ast.Definition{
 						Kind: ast.DefinitionKind(fullType.Kind),
 						Name: fullType.Name,
 						Description: fullType.Description,
+						Interfaces: interfaces,
 						Fields: ast.FieldList(fields),
+						EnumValues: ast.EnumValueList(enumValues),
+						Types: possibleTypes,
 				}
 		}
-
-		// fmt.Printf("%+v\n", schema)
-		/*fmt.Printf("%+v\n", schema.Types["Vendor_aggregate_fields"].Fields)*/
 
 		return schema, nil
 }
