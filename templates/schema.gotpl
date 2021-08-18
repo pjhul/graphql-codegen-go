@@ -7,6 +7,10 @@ import (
     type {{.Name}} struct {
         {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}}"`{{"\n"}}{{end}}
     }
+  {{else if eq .Kind "INTERFACE"}}
+    type {{.Name}} interface {
+        {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}}"`{{"\n"}}{{end}}
+    }
   {{else if eq .Kind "INPUT_OBJECT"}}
     type {{.Name}} struct {
         {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}},omitempty"`{{"\n"}}{{end}}
