@@ -37,9 +37,9 @@ const (
 type IntrospectionQueryResult struct {
 		Data struct {
 				Schema struct {
-						QueryType						*FullType `json:"queryType"`
-						MutationType				*FullType `json:"mutationType"`
-						SubscriptionType		*FullType `json:"subscriptionType"`
+						QueryType						*FullType		`json:"queryType"`
+						MutationType				*FullType		`json:"mutationType"`
+						SubscriptionType		*FullType		`json:"subscriptionType"`
 						Types								[]*FullType `json:"types"`
 				} `json:"__schema"`
 		} `json:"data"`
@@ -316,6 +316,7 @@ func Introspect(endpoint string, headers map[string][]string) (*ast.Schema, erro
 		var result IntrospectionQueryResult
 		err = json.Unmarshal(body, &result)
 		if err != nil {
+				fmt.Println(string(body))
 				return nil, err
 		} else if len(result.Errors) > 0 {
 				return nil, errors.New(fmt.Sprintf("%v", result.Errors))

@@ -8,9 +8,28 @@
     const (
       {{range $x.EnumValues}}{{$x.Name}}_{{formatName .Name}} {{$x.Name}} = "{{.Name}}"{{"\n"}}{{end}}
     )
+
+    func Make{{$x.Name}}(v {{$x.Name}}) *{{$x.Name}} {
+      return (*{{$x.Name}})(&v)
+    }
   {{end}}
   {{else if eq .Kind "SCALAR"}}
     type {{.Name}} {{formatScalar .Name}}
   {{end}}
 {{end}}
 
+func MakeInt(v int64) *int64 {
+  return &v
+}
+
+func MakeFloat(v float64) *float64 {
+  return &v
+}
+
+func MakeString(v string) *string {
+  return &v
+}
+
+func MakeBool(v bool) *bool {
+  return &v
+}
