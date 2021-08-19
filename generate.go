@@ -65,13 +65,8 @@ func generateSchema(schema *ast.Schema, out io.Writer) error {
 		return nil
 }
 
-func generateOperations(schema *ast.Schema, document string, out io.Writer) error {
+func generateOperations(schema *ast.Schema, queryDoc *ast.QueryDocument, out io.Writer) error {
 		fmt.Println("Generating operations...")
-
-		queryDoc, gqlErr := gqlparser.LoadQuery(schema, document)
-		if gqlErr != nil {
-				return gqlErr
-		}
 
 		tmpl, err := template.New("operations.gotpl").Funcs(template.FuncMap{
 				"formatName": formatName,
@@ -88,6 +83,61 @@ func generateOperations(schema *ast.Schema, document string, out io.Writer) erro
 		}
 
 		return nil
+}
+
+func parseQueryDocuments(schema *ast.Schema, documents []string) (*ast.QueryDocument, error) {
+		var parentDoc ast.QueryDocument
+		parentDoc.Operations = ast.OperationList{}
+		parentDoc.Fragments = ast.FragmentDefinitionList{}
+
+		for _, document := range documents {
+				queryDoc, err := gqlparser.LoadQuery(schema, document)
+				if err != nil {
+						return nil, err
+				}
+
+				operations := []*ast.OperationDefinition{}
+				for _, op := range queryDoc.Operations {
+						operations = append(operations, inlineOperationDefinition(queryDoc, op))
+				}
+
+				parentDoc.Operations = append(parentDoc.Operations, operations...)
+				parentDoc.Fragments = append(parentDoc.Fragments, queryDoc.Fragments...)
+		}
+
+		return &parentDoc, nil
+}
+
+func inlineOperationDefinition(queryDoc *ast.QueryDocument, operation *ast.OperationDefinition) *ast.OperationDefinition {
+		operation.SelectionSet = *inlineSelectionSet(queryDoc, &operation.SelectionSet)
+		return operation
+}
+
+func inlineSelectionSet(queryDoc *ast.QueryDocument, selectionSet *ast.SelectionSet) *ast.SelectionSet {
+		if selectionSet == nil || len(*selectionSet) == 0 {
+				return nil
+		}
+
+		inlined := ast.SelectionSet{}
+		for _, selection := range *selectionSet {
+				switch selection := selection.(type) {
+				case *ast.Field:
+						if len(selection.SelectionSet) > 0 {
+								selection.SelectionSet = *inlineSelectionSet(queryDoc, &selection.SelectionSet)
+								inlined = append(inlined, selection)
+						} else {
+								inlined = append(inlined, selection)
+						}
+				case *ast.FragmentSpread:
+						inlined = append(inlined, *inlineSelectionSet(queryDoc, &selection.Definition.SelectionSet)...)
+				case *ast.InlineFragment:
+						inlined = append(inlined, *inlineSelectionSet(queryDoc, &selection.SelectionSet)...)
+				default:
+
+				}
+		}
+
+		return &inlined
 }
 
 func formatName(name string) string {
@@ -141,6 +191,7 @@ func formatSelectionSet(selectionSet ast.SelectionSet, depth int) string {
 
 		var sb strings.Builder
 
+		// this recursion feels overcomplicated
 		for _, selection := range selectionSet {
 				switch selection := selection.(type) {
 				case *ast.Field:
@@ -190,6 +241,7 @@ func formatSelectionSet(selectionSet ast.SelectionSet, depth int) string {
 								)
 						}
 				default:
+
 				}
 		}
 
@@ -200,9 +252,7 @@ func formatQuery(op *ast.OperationDefinition, fragments ast.FragmentDefinitionLi
 		var sb strings.Builder
 
 		f := Formatter{Writer: &sb}
-
 		f.FormatOperationDefinition(op)
-		f.FormatFragmentDefinitionList(fragments)
 
 		return sb.String()
 }

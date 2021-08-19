@@ -68,13 +68,18 @@ func main() {
 		operationFiles, err := filepath.Glob(*operationsGlob)
 		if err != nil { panic(err) }
 
+		queryDocs := []string{}
 		for _, file := range operationFiles {
 				opFile, err := ioutil.ReadFile(file)
 				if err != nil { panic(err) }
 
-				err = generateOperations(schema, string(opFile), &buf)
-				if err != nil { panic(err) }
+				queryDocs = append(queryDocs, string(opFile))
 		}
+
+		queryDoc, err := parseQueryDocuments(schema, queryDocs)
+
+		err = generateOperations(schema, queryDoc, &buf)
+		if err != nil { panic(err) }
 
 		file, err := os.Create("schema.go")
 		if err != nil { panic(err) }
