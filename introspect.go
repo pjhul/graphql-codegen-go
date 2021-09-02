@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"io/ioutil"
 	"net/http"
@@ -194,7 +195,7 @@ func parseFullType(fullType *FullType) *ast.Definition {
 		}
 }
 
-func Introspect(endpoint string, headers map[string][]string) (*ast.Schema, error) {
+func Introspect(endpoint string, headers map[string][]string, includeBuiltin bool) (*ast.Schema, error) {
 		fmt.Printf("Pulling remote schema from %s...\n", endpoint)
 
 		query := `
@@ -341,6 +342,10 @@ func Introspect(endpoint string, headers map[string][]string) (*ast.Schema, erro
 		schema.PossibleTypes = make(map[string][]*ast.Definition)
 		for _, fullType := range resultSchema.Types {
 				if fullType != nil {
+						if !includeBuiltin && strings.HasPrefix(fullType.Name, "__") {
+								continue
+						}
+
 						def := parseFullType(fullType)
 						schema.Types[fullType.Name] = def
 						schema.AddPossibleType(fullType.Name, def)

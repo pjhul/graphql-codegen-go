@@ -1,14 +1,14 @@
 {{range .Types}}
   {{if eq .Kind "OBJECT"}}
-    type {{.Name}} struct {
+    type {{formatName .Name}} struct {
         {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}}"`{{"\n"}}{{end}}
     }
   {{else if eq .Kind "INTERFACE"}}
-    type {{.Name}} struct {
+    type {{formatName .Name}} struct {
         {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}}"`{{"\n"}}{{end}}
     }
   {{else if eq .Kind "UNION"}}
-    type {{.Name}} interface{}
+    type {{formatName .Name}} interface{}
   {{end}}
 {{end}}
 

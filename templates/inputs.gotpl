@@ -1,16 +1,16 @@
 {{range .Types}}
   {{if eq .Kind "INPUT_OBJECT"}}
-    type {{.Name}} struct {
+    type {{formatName .Name}} struct {
         {{range .Fields}}{{formatName .Name}} {{formatType .Type}} `json:"{{.Name}},omitempty"`{{"\n"}}{{end}}
     }
   {{else if eq .Kind "ENUM"}}{{with $x := .}}
-    type {{$x.Name}} string
+    type {{formatName $x.Name}} string
     const (
-      {{range $x.EnumValues}}{{$x.Name}}_{{formatName .Name}} {{$x.Name}} = "{{.Name}}"{{"\n"}}{{end}}
+      {{range $x.EnumValues}}{{formatName $x.Name}}{{formatName .Name}} {{formatName $x.Name}} = "{{.Name}}"{{"\n"}}{{end}}
     )
 
-    func Make{{$x.Name}}(v {{$x.Name}}) *{{$x.Name}} {
-      return (*{{$x.Name}})(&v)
+    func Make{{formatName $x.Name}}(v {{formatName $x.Name}}) *{{formatName $x.Name}} {
+      return (*{{formatName $x.Name}})(&v)
     }
   {{end}}
   {{else if eq .Kind "SCALAR"}}
@@ -18,11 +18,11 @@
   {{end}}
 {{end}}
 
-func MakeInt(v int64) *int64 {
+func MakeInt64(v int64) *int64 {
   return &v
 }
 
-func MakeFloat(v float64) *float64 {
+func MakeFloat64(v float64) *float64 {
   return &v
 }
 

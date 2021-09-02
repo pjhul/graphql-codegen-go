@@ -52,7 +52,7 @@ func main() {
 				headerMap[strings.TrimSpace(slices[0])] = []string{strings.TrimSpace(slices[1])}
 		}
 
-		schema, err := Introspect(*endpoint, headerMap)
+		schema, err := Introspect(*endpoint, headerMap, false)
 		if err != nil {
 				fmt.Println(err)
 		}

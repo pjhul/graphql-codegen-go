@@ -15,11 +15,13 @@ import (
 var typeMap = map[string]string{
 		"ID":						"string",
 		"Int":					"int64",
+		"uuid":					"string",
 		"Float":				"float64",
 		"Boolean":			"bool",
 		"String":				"string",
 		"_text":				"[]string",
 		"timestamptz":	"string",
+		"URL":					"string",
 }
 
 //go:embed templates/schema.gotpl
@@ -140,8 +142,20 @@ func inlineSelectionSet(queryDoc *ast.QueryDocument, selectionSet *ast.Selection
 		return &inlined
 }
 
+func snakeToCamel(s string) string {
+		tokens := strings.Split(s, "_")
+
+		var sb strings.Builder
+
+		for _, token := range tokens {
+				sb.WriteString(strings.Title(token))
+		}
+
+		return sb.String()
+}
+
 func formatName(name string) string {
-		return strings.Title(name)
+		return snakeToCamel(name)
 }
 
 func formatFragmentName(name string) string {
@@ -171,7 +185,7 @@ func formatType(t *ast.Type) string {
 				if ok {
 						sb.WriteString("[]" + newType)
 				} else {
-						sb.WriteString("[]" + t.Elem.NamedType)
+						sb.WriteString("[]" + snakeToCamel(t.Elem.NamedType))
 				}
 		} else {
 				newType, ok := typeMap[t.NamedType]
@@ -179,7 +193,7 @@ func formatType(t *ast.Type) string {
 				if ok {
 						sb.WriteString(newType)
 				} else {
-						sb.WriteString(t.NamedType)
+						sb.WriteString(snakeToCamel(t.NamedType))
 				}
 		}
 
